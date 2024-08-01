@@ -22,32 +22,37 @@ def facial_emotion_recognition(video_path: str):
 
   while True:
       ret, frame = cap.read()
-      
+
       if not ret:
           break  # Exit loop when video ends or frame read error
 
-      # Analyze face
-      result = DeepFace.analyze(frame, actions=['emotion'], enforce_detection=False)  # Specify actions if needed
-      
+      try:
+        result = DeepFace.analyze(frame, actions=['emotion'], detector_backend='yolov8', align=True)
+      except:
+        continue
+
       # Convert frame to grayscale and detect faces
       gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-      faces = facecascade.detectMultiScale(gray, 1.1, 4)
-      
+      faces = facecascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=10, minSize=(50, 50))
+
       # Draw rectangles around detected faces and add emotion text above the bounding box
       font = cv2.FONT_HERSHEY_SIMPLEX
       for (x, y, w, h) in faces:
           # Draw bounding box
-          cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-          
+          cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 6)
+
           # Add text above bounding box
           if result:
-              emotion = result[0]['dominant_emotion']
-              print('Emotion detected: ', emotion)
+              emotion = result[0]['dominant_emotion'].capitalize()
               text_size, _ = cv2.getTextSize(emotion, font, 1, 2)
               text_x = x
               text_y = y - 10 if y - 10 > 10 else y + 10  # Ensure text doesn't go off the top of the frame
-              cv2.putText(frame, emotion, (text_x, text_y), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
-      
+
+              font = cv2.FONT_HERSHEY_SIMPLEX
+              fontScale = h/50  # Increase for larger text
+              color = (0, 0, 255)  # Green color
+              thickness = 3  # Increase for bolder text
+              cv2.putText(frame, emotion, (text_x, text_y), font, fontScale, color, thickness, cv2.LINE_AA)
       # Write the processed frame to output video
       out.write(frame)
 
